@@ -1,0 +1,74 @@
+<?php
+include("koneksi.php");
+
+if(isset($_POST['tambah'])) {
+    $kode_transaksi =  $_POST['kode_transaksi'];
+    $nama_barang = $_POST['nama_barang'];
+    $pecahB = explode(".", $nama_barang);
+    $kode_barang = $pecahB[0];
+    $jumlah = $_POST['jumlah'];
+    $tanggal = $_POST['tanggal'];
+
+    // Ambil data barang dari database
+    $sql = "SELECT * FROM barang WHERE kode_barang = '$kode_barang'";
+    $query = mysqli_query($db, $sql);
+    $data_barang = mysqli_fetch_assoc($query);
+    
+    // Periksa stok barang
+    if($data_barang['stok'] < $jumlah) {
+        header('location : transaksi.php');
+        echo "Stok Barang Habis";
+    } else {
+        // Hitung total bayar
+        $totalbayar = $data_barang['harga'] * $jumlah;
+
+        // Update stok barang
+        $sql = "UPDATE barang SET stok = (stok - $jumlah) WHERE kode_barang = '$kode_barang'";
+        $query = mysqli_query($db, $sql);
+
+        // Insert ke tabel transaksi
+        $sql = "INSERT INTO transaksi (kode_transaksi, kode_barang, jumlah, total_bayar, tanggal) VALUES ('$kode_transaksi', '$kode_barang', '$jumlah', '$totalbayar', '$tanggal')";
+        $query = mysqli_query($db, $sql);
+
+        header ('location : view_transaksi.php');
+    }
+}
+?>
+
+<!-- HTML Form -->
+<h1 class="mt-4">Tambah Data Transaksi</h1>
+
+<div class="card-header mb-5">
+    <form action="" method="post">
+        <div class="form-group">
+            <label for="kode_transaksi">Kode Transaksi</label>
+            <input type="text" name="kode_transaksi" class="form-control">
+        </div>
+        <div class="form-group">
+            <label class="small mb-1" for="nama_barang">Nama</label>
+            <select name="nama_barang" id="nama_barang" class="form-control">
+                <option value="">-- Pilih Barang --</option>
+                <?php 
+                $select = "SELECT * FROM barang ORDER BY kode_barang";
+                $tampilBarang = mysqli_query($db, $select);
+                while ($pecahBarang = mysqli_fetch_assoc($tampilBarang)) {
+                    echo "<option value='{$pecahBarang['kode_barang']}.{$pecahBarang['nama_barang']}'>
+                          {$pecahBarang['kode_barang']}.{$pecahBarang['nama_barang']}
+                          </option>";
+                }
+                ?>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="jumlah">Jumlah</label>
+            <input type="text" name="jumlah" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="tanggal">Tanggal</label>
+            <input type="date" name="tanggal" class="form-control">
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary" name="tambah">Tambah Data</button>
+        </div>
+    </form>
+</div>
